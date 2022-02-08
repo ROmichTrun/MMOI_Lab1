@@ -1,0 +1,77 @@
+from skimage.io import imread, imshow, show, imsave
+from skimage.exposure import histogram
+from skimage.transform import resize
+from matplotlib import pyplot as plt
+
+import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='Пример использования argrapse для разбора аргументов командной строки')
+parser.add_argument('-k', '--floatarg', type=float,
+                    default=0.5, help='коэффициент мультиэкспозиции')
+parser.add_argument('-i1', '--stringarg1', type=str,
+                    help='путь к первому изображению', required=True)
+parser.add_argument('-i2', '--stringarg2', type=str,
+                    help='путь ко второму изображению', required=True)
+parser.add_argument('-o', '--stringarg3', type=str,
+                    help='путь для сохранения итогового изображения', required=True)
+
+args = parser.parse_args()
+
+print(args.floatarg)
+print(args.stringarg1)
+print(args.stringarg2)
+print(args.stringarg3)
+
+img1 = imread(args.stringarg1)
+img2 = imread(args.stringarg2)
+
+img1 = img1 / np.max(img1)
+img2 = img2 / np.max(img2)
+
+print('image1 shape: ', img1.shape)
+print('image2 shape: ', img2.shape)
+
+img2 = resize(img2, (img1.shape[0], img1.shape[1]))
+
+img3 = np.multiply(img1, args.floatarg) + np.multiply(img2, 1.0 - args.floatarg)
+
+img3 = img3 / np.max(img3)
+
+fig = plt.figure(figsize=(10, 5))
+fig.add_subplot(2, 3, 1)
+imshow(img1)
+fig.add_subplot(2, 3, 2)
+imshow(img2)
+fig.add_subplot(2, 3, 3)
+imshow(img3)
+
+hist_red, bins_red = histogram(img1[:, :, 2])
+hist_green, bins_green = histogram(img1[:, :, 1])
+hist_blue, bins_blue = histogram(img1[:, :, 0])
+
+hist_red2, bins_red2 = histogram(img2[:, :, 2])
+hist_green2, bins_green2 = histogram(img2[:, :, 1])
+hist_blue2, bins_blue2 = histogram(img2[:, :, 0])
+
+hist_red3, bins_red3 = histogram(img3[:, :, 2])
+hist_green3, bins_green3 = histogram(img3[:, :, 1])
+hist_blue3, bins_blue3 = histogram(img3[:, :, 0])
+
+
+def gist(hist_red, bins_red, hist_green, bins_green, hist_blue, bins_blue, n):
+    fig.add_subplot(2, 3, n)
+    plt.plot(bins_green, hist_green, color='green', linestyle='-', linewidth=1)
+    plt.plot(bins_red, hist_red, color='red', linestyle='-', linewidth=1)
+    plt.plot(bins_blue, hist_blue, color='blue', linestyle='-', linewidth=1)
+    plt.legend(['green', 'red', 'blue'])
+
+
+gist(hist_red, bins_red, hist_green, bins_green, hist_blue, bins_blue, 4)
+gist(hist_red2, bins_red2, hist_green2, bins_green2, hist_blue2, bins_blue2, 5)
+gist(hist_red3, bins_red3, hist_green3, bins_green3, hist_blue3, bins_blue3, 6)
+
+show()
+
+imsave(args.stringarg3, (img3 * 255).astype(np.uint8))
